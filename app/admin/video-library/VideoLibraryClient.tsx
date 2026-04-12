@@ -26,6 +26,7 @@ export function VideoLibraryClient({ companyId, videos: initial }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<Video | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
@@ -148,7 +149,13 @@ export function VideoLibraryClient({ companyId, videos: initial }: Props) {
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <button
-                onClick={() => setPreview(v)}
+                onClick={async () => {
+                  setPreview(v)
+                  setPreviewUrl(null)
+                  const res = await fetch(`/api/videos/signed-url?key=${encodeURIComponent(v.url)}`)
+                  const { url } = await res.json()
+                  setPreviewUrl(url)
+                }}
                 className="text-xs border border-border rounded-lg px-3 py-1.5 text-foreground hover:bg-muted/30 transition"
               >
                 Önizle
@@ -170,15 +177,22 @@ export function VideoLibraryClient({ companyId, videos: initial }: Props) {
           <div className="bg-card rounded-2xl border border-border w-full max-w-xl space-y-3 p-5">
             <div className="flex items-center justify-between">
               <p className="font-semibold text-foreground">{preview.title}</p>
-              <button onClick={() => setPreview(null)} className="text-muted-foreground hover:text-foreground text-2xl leading-none">×</button>
+              <button onClick={() => { setPreview(null); setPreviewUrl(null) }} className="text-muted-foreground hover:text-foreground text-2xl leading-none">×</button>
             </div>
-            <video
-              src={preview.url}
-              controls
-              controlsList="nodownload"
-              onContextMenu={e => e.preventDefault()}
-              className="w-full rounded-xl bg-black"
-            />
+            {previewUrl ? (
+              <video
+                src={previewUrl}
+                controls
+                autoPlay
+                controlsList="nodownload"
+                onContextMenu={e => e.preventDefault()}
+                className="w-full rounded-xl bg-black"
+              />
+            ) : (
+              <div className="w-full aspect-video rounded-xl bg-black flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
           </div>
         </div>
       )}

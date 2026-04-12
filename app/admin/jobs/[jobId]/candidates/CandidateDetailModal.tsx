@@ -238,35 +238,46 @@ export function CandidateDetailModal({ app, allScores, totalCount, onClose, onRe
               </div>
             )}
 
-            {/* Approve / Reject Actions */}
-            {app.status === 'scored' && (
-              <div style={{
-                display: 'flex', gap: '10px', justifyContent: 'flex-end',
-                paddingTop: '16px', borderTop: '1px solid #f3f4f6',
+          </div>
+
+          {/* Action Footer */}
+          {app.status === 'scored' && (
+            <div style={{
+              padding: '18px 28px',
+              borderTop: '2px solid #f3f4f6',
+              background: '#fafafa',
+              borderRadius: '0 0 24px 24px',
+            }}>
+              <p style={{
+                fontSize: '11px', fontWeight: 700, color: '#9ca3af',
+                textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px',
               }}>
-                <button
-                  onClick={() => setShowApproveModal(true)}
-                  style={{
-                    padding: '8px 20px', borderRadius: '8px', border: 'none',
-                    background: '#0033ff', color: 'white',
-                    fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                  }}
-                >
-                  Onayla
-                </button>
+                Aday Kararı
+              </p>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   onClick={handleReject}
                   style={{
-                    padding: '8px 20px', borderRadius: '8px',
-                    border: '1px solid #fecaca', background: 'white',
+                    flex: 1, padding: '10px 0', borderRadius: '10px',
+                    border: 'none', background: '#fee2e2',
                     color: '#dc2626', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
                   }}
                 >
                   Reddet
                 </button>
+                <button
+                  onClick={() => setShowApproveModal(true)}
+                  style={{
+                    flex: 2, padding: '10px 0', borderRadius: '10px',
+                    border: 'none', background: '#0033ff',
+                    color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Onayla
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

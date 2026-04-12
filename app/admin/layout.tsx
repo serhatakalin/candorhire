@@ -1,10 +1,8 @@
 import { getServerSession, createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
-import { Suspense } from 'react'
 import { LogoutButton } from '@/components/LogoutButton'
 import { Briefcase, PlusCircle, Users, Video, HelpCircle } from 'lucide-react'
 import { NavItem } from './NavItem'
-import { AdminSearchBar } from './AdminSearchBar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -44,25 +42,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <NavItem href="/admin/question-bank" label="Soru Havuzu" icon={<HelpCircle size={18} />} />
         </nav>
 
-        {/* Logout */}
-        <div className="mt-auto pt-4 border-t border-slate-100 px-3">
+        {/* User & Logout */}
+        <div className="mt-auto pt-4 border-t border-slate-100 px-3 flex flex-col gap-2">
+          <div>
+            <p className="text-[12px] font-bold text-[#171c1f]">{displayName}</p>
+            <p className="text-[10px] text-slate-400 font-medium">{roleLabel}</p>
+          </div>
           <LogoutButton className="w-full justify-start text-xs text-slate-500 hover:text-destructive transition-colors" />
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col gap-4 min-w-0">
-        {/* Top Header */}
-        <header className="bg-white rounded-3xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] h-16 px-6 flex items-center justify-between shrink-0">
-          <Suspense fallback={<div className="w-72 h-8 rounded-full bg-slate-50 animate-pulse" />}>
-            <AdminSearchBar />
-          </Suspense>
-          <div className="text-right">
-            <p className="text-[12px] font-bold text-[#171c1f]">{displayName}</p>
-            <p className="text-[10px] text-slate-400 font-medium">{roleLabel}</p>
-          </div>
-        </header>
-
         {/* Page Content */}
         <main className="bg-white rounded-3xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] flex-1 overflow-auto min-h-0">
           {children}
