@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
 import { Play, FileText, X, Sparkles, SlidersHorizontal, ChevronDown, MousePointerClick, Brain } from 'lucide-react'
 import { CandidateDetailModal } from '@/app/admin/jobs/[jobId]/candidates/CandidateDetailModal'
 import { VideoPlayerWithPins } from '@/components/VideoPlayerWithPins'
@@ -80,23 +81,9 @@ function CvMatchBadge({ score }: { score: number }) {
   const color = score >= 70 ? '#16a34a' : score >= 40 ? '#d97706' : '#dc2626'
   const bg = score >= 70 ? '#f0fdf4' : score >= 40 ? '#fffbeb' : '#fef2f2'
   return (
-    <div className="relative group flex items-center justify-center">
-      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ color, background: bg }}>
-        {score}%
-        <Sparkles size={7} style={{ color }} />
-      </span>
-      {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-xl px-3 py-2.5 text-[11px] leading-relaxed text-center
-        opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] text-white"
-        style={{ background: '#171c1f' }}>
-        <div className="flex items-center justify-center gap-1 mb-1">
-          <Sparkles size={10} color="#a78bfa" />
-          <span className="font-bold">AI CV Analizi</span>
-        </div>
-        CV, ilandaki anahtar kelimelerle yapay zeka tarafından karşılaştırıldı.
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: '#171c1f' }} />
-      </div>
-    </div>
+    <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ color, background: bg }}>
+      {score}%
+    </span>
   )
 }
 
@@ -105,39 +92,51 @@ function ScoreRing({ score }: { score: number }) {
   const dash = (score / 100) * circumference
   const color = score >= 80 ? '#16a34a' : score >= 60 ? '#d97706' : '#dc2626'
   return (
-    <div className="relative group">
-      <div className="relative w-9 h-9">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-          <circle cx="18" cy="18" r="16" fill="none" stroke="#f1f5f9" strokeWidth="2.5" />
-          <circle cx="18" cy="18" r="16" fill="none" stroke={color} strokeWidth="2.5"
-            strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round" />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{ color }}>
-          {score}
-        </span>
-        {/* AI badge */}
-        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border border-white"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-          <Sparkles size={7} color="white" />
-        </div>
-      </div>
-      {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-xl px-3 py-2.5 text-[11px] leading-relaxed text-center
-        opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] text-white"
-        style={{ background: '#171c1f' }}>
-        <div className="flex items-center justify-center gap-1 mb-1">
-          <Sparkles size={10} color="#a78bfa" />
-          <span className="font-bold">Yapay Zeka Skoru</span>
-        </div>
-        Teknik, İletişim ve Motivasyon kriterleri AI tarafından değerlendirildi.
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: '#171c1f' }} />
-      </div>
+    <div className="relative w-9 h-9">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="16" fill="none" stroke="#f1f5f9" strokeWidth="2.5" />
+        <circle cx="18" cy="18" r="16" fill="none" stroke={color} strokeWidth="2.5"
+          strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round" />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{ color }}>
+        {score}
+      </span>
     </div>
   )
 }
 
 export function AllCandidatesTable({ applications: initial }: { applications: CandidateApp[] }) {
   const [applications, setApplications] = useState<CandidateApp[]>(initial)
+
+  // Poll DB every 5s to pick up status changes (pending → analyzing → scored)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialIdsRef = useRef(initial.map(a => a.id))
+  useEffect(() => {
+    const ids = initialIdsRef.current
+    if (!ids.length) return
+    const supabase = createClient()
+    let active = true
+
+    const interval = setInterval(async () => {
+      if (!active) return
+      const { data } = await supabase
+        .from('applications')
+        .select('id, status, ai_summary, score, score_breakdown, keyword_matches, cv_match_score')
+        .in('id', ids)
+      if (!data || !active) return
+      setApplications(prev => prev.map(a => {
+        const fresh = data.find(d => d.id === a.id)
+        return fresh ? { ...a, ...fresh } : a
+      }))
+    }, 5000)
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  // runs once on mount; initialIdsRef.current is stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [activeTab, setActiveTab] = useState('all')
   const [selectedPositions, setSelectedPositions] = useState<string[]>([])
   const [showFilter, setShowFilter] = useState(false)
@@ -339,8 +338,20 @@ export function AllCandidatesTable({ applications: initial }: { applications: Ca
             <div className="col-span-2">Tarih</div>
             <div className="col-span-2">Durum</div>
             <div className="col-span-2">Aksiyonlar</div>
-            <div className="col-span-1 text-center">CV</div>
-            <div className="col-span-1 text-center">Skor</div>
+            <div className="col-span-1 text-center relative group flex items-center justify-center gap-0.5 cursor-default">
+              CV <Sparkles size={9} />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-xl px-3 py-2.5 text-[11px] leading-relaxed text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] text-white normal-case tracking-normal font-normal" style={{ background: '#171c1f' }}>
+                CV, ilandaki anahtar kelimelerle yapay zeka tarafından karşılaştırıldı.
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: '#171c1f' }} />
+              </div>
+            </div>
+            <div className="col-span-1 text-center relative group flex items-center justify-center gap-0.5 cursor-default">
+              Skor <Sparkles size={9} />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-xl px-3 py-2.5 text-[11px] leading-relaxed text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] text-white normal-case tracking-normal font-normal" style={{ background: '#171c1f' }}>
+                Teknik, İletişim ve Motivasyon kriterleri AI tarafından değerlendirildi.
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: '#171c1f' }} />
+              </div>
+            </div>
           </div>
 
           <div className="border border-t-0 border-slate-100 rounded-b-xl overflow-visible">
@@ -388,7 +399,7 @@ export function AllCandidatesTable({ applications: initial }: { applications: Ca
 
                   {/* Aksiyonlar */}
                   <div className="col-span-2 flex gap-1" onClick={e => e.stopPropagation()}>
-                    {app.video_url && (
+                    {!isAnalyzing && app.video_url && (
                       <button
                         onClick={() => openVideo(app)}
                         disabled={loadingMap[app.id + '-video']}
@@ -398,7 +409,7 @@ export function AllCandidatesTable({ applications: initial }: { applications: Ca
                         {loadingMap[app.id + '-video'] ? '...' : 'Video'}
                       </button>
                     )}
-                    {app.cv_url && (
+                    {!isAnalyzing && app.cv_url && (
                       <button
                         onClick={() => openCv(app)}
                         disabled={loadingMap[app.id + '-cv']}

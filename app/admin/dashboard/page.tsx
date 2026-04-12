@@ -72,52 +72,52 @@ export default async function DashboardPage() {
             return (
               <div
                 key={job.id}
-                className="relative bg-white rounded-xl border border-slate-100 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.06)] flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,80,0.10)] cursor-pointer"
+                className="relative bg-white rounded-xl border border-slate-100 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.06)] flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,80,0.10)]"
               >
-                {/* Full-card clickable overlay */}
-                <Link href={`/admin/jobs/${job.id}/candidates`} className="absolute inset-0 z-0 rounded-xl" aria-label={job.title} />
-                {/* Card Header */}
-                <div className="p-5 pb-3 flex items-start justify-between gap-3">
-                  <h2 className="font-extrabold text-[15px] text-[#171c1f] leading-snug tracking-tight">
-                    {job.title}
-                  </h2>
-                  <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider ${style.chip}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                    {statusLabel[job.status] ?? job.status}
-                  </span>
-                </div>
-
-                {/* Date */}
-                <div className="px-5 pb-3">
-                  <p className="text-[11px] text-slate-400 font-medium">
-                    {new Date(job.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-
-                {/* Keywords */}
-                {keywords.length > 0 && (
-                  <div className="px-5 pb-4 flex flex-wrap gap-1.5">
-                    {keywords.map(kw => (
-                      <span
-                        key={kw}
-                        className="px-2 py-0.5 bg-slate-50 text-slate-500 text-[11px] font-semibold rounded-md border border-slate-100"
-                      >
-                        {kw}
-                      </span>
-                    ))}
-                    {remaining > 0 && (
-                      <span className="px-2 py-0.5 bg-slate-50 text-slate-400 text-[11px] font-semibold rounded-md border border-slate-100">
-                        +{remaining}
-                      </span>
-                    )}
+                {/* Main clickable area — wraps content but not the footer buttons */}
+                <Link href={`/admin/jobs/${job.id}/candidates`} className="block rounded-xl pb-[52px]" aria-label={job.title}>
+                  {/* Card Header */}
+                  <div className="p-5 pb-3 flex items-start justify-between gap-3 pr-5">
+                    <h2 className="font-extrabold text-[15px] text-[#171c1f] leading-snug tracking-tight">
+                      {job.title}
+                    </h2>
+                    <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider ${style.chip}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                      {statusLabel[job.status] ?? job.status}
+                    </span>
                   </div>
-                )}
 
-                {/* Footer */}
-                <div className="mt-auto px-5 py-3.5 border-t border-slate-50 bg-slate-50/40 rounded-b-xl flex items-center justify-between gap-3">
-                  {/* Applicant count */}
-                  <div className="flex items-center gap-2">
-                    {/* Stacked placeholder circles */}
+                  {/* Date */}
+                  <div className="px-5 pb-3">
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      {new Date(job.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+
+                  {/* Keywords */}
+                  {keywords.length > 0 && (
+                    <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+                      {keywords.map(kw => (
+                        <span
+                          key={kw}
+                          className="px-2 py-0.5 bg-slate-50 text-slate-500 text-[11px] font-semibold rounded-md border border-slate-100"
+                        >
+                          {kw}
+                        </span>
+                      ))}
+                      {remaining > 0 && (
+                        <span className="px-2 py-0.5 bg-slate-50 text-slate-400 text-[11px] font-semibold rounded-md border border-slate-100">
+                          +{remaining}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </Link>
+
+                {/* Footer — positioned over the bottom of the card, outside the main Link */}
+                <div className="absolute bottom-0 left-0 right-0 px-5 py-3.5 border-t border-slate-50 bg-slate-50/40 rounded-b-xl flex items-center justify-between gap-3">
+                  {/* Applicant count — clicking this also navigates */}
+                  <Link href={`/admin/jobs/${job.id}/candidates`} className="flex items-center gap-2">
                     <div className="flex -space-x-2">
                       {Array.from({ length: Math.min(job.appCount, 3) }).map((_, i) => (
                         <div
@@ -139,25 +139,25 @@ export default async function DashboardPage() {
                     {job.appCount > 0 && (
                       <span className="text-[12px] text-slate-400 font-medium">{job.appCount} başvuru</span>
                     )}
-                  </div>
+                  </Link>
 
                   {/* Buttons */}
-                  <div className="relative z-10 flex items-center gap-2">
-                  <Link
-                    href={`/admin/jobs/${job.id}/edit`}
-                    className="inline-flex items-center gap-1.5 border border-slate-200 bg-white text-slate-600 text-[12px] font-semibold px-3 py-1.5 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-colors"
-                  >
-                    Düzenle
-                  </Link>
-                  <Link
-                    href={`/admin/jobs/${job.id}/candidates`}
-                    className="inline-flex items-center gap-1.5 bg-[#0033ff] text-white text-[12px] font-semibold px-4 py-1.5 rounded-lg hover:bg-[#0029e0] transition-colors"
-                  >
-                    Detay
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/admin/jobs/${job.id}/edit`}
+                      className="inline-flex items-center gap-1.5 border border-slate-200 bg-white text-slate-600 text-[12px] font-semibold px-3 py-1.5 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                    >
+                      Düzenle
+                    </Link>
+                    <Link
+                      href={`/admin/jobs/${job.id}/candidates`}
+                      className="inline-flex items-center gap-1.5 bg-[#0033ff] text-white text-[12px] font-semibold px-4 py-1.5 rounded-lg hover:bg-[#0029e0] transition-colors"
+                    >
+                      Detay
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </Link>
                   </div>
                 </div>
               </div>
