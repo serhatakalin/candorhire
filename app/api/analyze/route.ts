@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { revalidateTag } from 'next/cache'
 import { getPresignedDownloadUrl } from '@/lib/r2'
 
 export const maxDuration = 300
@@ -88,6 +89,8 @@ async function analyzeWithClaude(params: {
           role: 'user',
           content: `Sen deneyimli bir işe alım uzmanısın. Aşağıdaki pozisyon için adayın video mülakat transkriptini analiz et ve submit_analysis aracını çağırarak değerlendirmeni sun. Tüm çıktıları Türkçe yaz.
 
+KRİTİK KURAL: Yalnızca transkriptte gerçekten söylenen bilgileri kullan. Transkriptte geçmeyen hiçbir beceri, deneyim veya özellik hakkında varsayımda bulunma veya çıkarım yapma. Transkript yetersizse bunu ai_summary'de açıkça belirt.
+
 Pozisyon: ${jobTitle}
 İş açıklaması: ${jobDescription}
 Aranan beceriler/anahtar kelimeler: ${jobKeywords.join(', ')}
@@ -95,7 +98,7 @@ Aranan beceriler/anahtar kelimeler: ${jobKeywords.join(', ')}
 Transkript:
 ${transcript}
 
-Nesnel değerlendir. Her boyut için 0-100 arası puan ver. keyword_matches yalnızca transkriptte gerçekten geçen veya açıkça örtüşen becerileri listele.`,
+Nesnel değerlendir. Her boyut için 0-100 arası puan ver. keyword_matches yalnızca transkriptte kelime kelime geçen veya açıkça bahsedilen becerileri listele — çıkarım yapma.`,
         },
       ],
     }),
@@ -121,6 +124,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Invalidate admin cache so new application appears immediately
+    revalidateTag(`job-data-${jobId}`)
+
     // Mark as analyzing immediately
     await db().from('applications').update({ status: 'analyzing' }).eq('id', applicationId)
 
@@ -154,12 +160,37 @@ export async function POST(request: NextRequest) {
     })
     const result = await resultRes.json()
 
+    // Common Whisper hallucination patterns (subtitles, copyright notices, etc.)
+    const ARTIFACT_PATTERNS = [
+      /^altyaz[ıi]/i,
+      /^subtitle/i,
+      /^copyright/i,
+      /^www\./i,
+      /^\[.*\]$/,
+      /^abone ol/i,
+      /^like.*abone/i,
+    ]
+
     const transcript: string = (result.chunks ?? [])
       .map((c: { text: string }) => c.text.trim())
-      .filter(Boolean)
+      .filter(chunk => chunk && !ARTIFACT_PATTERNS.some(p => p.test(chunk)))
       .join(' ')
 
+    const wordCount = transcript.trim().split(/\s+/).filter(w => w.length > 1).length
+
     await db().from('applications').update({ transcript }).eq('id', applicationId)
+
+    // Require at least 20 meaningful words for AI analysis
+    if (wordCount < 20) {
+      await db().from('applications').update({
+        ai_summary: 'Ses transkripsiyonu yeterli içerik sağlamadı veya video yanıtı çok kısa kaldı. Manuel inceleme önerilir.',
+        score: null,
+        score_breakdown: null,
+        keyword_matches: [],
+        status: 'scored',
+      }).eq('id', applicationId)
+      return NextResponse.json({ ok: true })
+    }
 
     // Fetch job data for Claude context
     const { data: job } = await db()
