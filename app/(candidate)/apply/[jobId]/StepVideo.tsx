@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 
 const MAX_DURATION = 5 * 60
 const EXTRA_DURATION = 5 * 60
-const QUESTION_DISPLAY_SEC = 8
 
 interface Question {
   text: string
@@ -30,11 +29,12 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timerDisplayRef = useRef<HTMLSpanElement>(null)
+  const remainingRef = useRef(MAX_DURATION)
 
   const [state, setState] = useState<RecordState>('idle')
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false)
   const [countdown, setCountdown] = useState(5)
-  const [timeLeft, setTimeLeft] = useState(MAX_DURATION)
   const [extraUsed, setExtraUsed] = useState(false)
   const [showExtraOffer, setShowExtraOffer] = useState(false)
   const [error, setError] = useState('')
@@ -44,16 +44,15 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
   const [showShortWarning, setShowShortWarning] = useState(false)
   const [starting, setStarting] = useState(false)
 
-  const activeQTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const shownQuestionsRef = useRef<Set<number>>(new Set())
   const activeQuestionRef = useRef<Question | null>(null)
   const elapsedRef = useRef(0)
+  const nextQuestionIdxRef = useRef(0)
+  const questionsRef = useRef<Question[]>([])
 
   useEffect(() => {
     return () => {
       stopTimer()
       if (countdownRef.current) clearInterval(countdownRef.current)
-      if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
       streamRef.current?.getTracks().forEach(t => t.stop())
     }
   }, [])
@@ -71,71 +70,76 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
   }
 
   function showQuestion(q: Question) {
-    if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
     activeQuestionRef.current = q
     setActiveQuestion(q)
   }
 
-  function dismissQuestion() {
-    if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
-    const current = activeQuestionRef.current
-    if (current) {
-      setPastQuestions(past => [...past, current])
-      activeQuestionRef.current = null
-      setActiveQuestion(null)
-    }
-  }
-
   function showNextQuestion() {
-    // Clear the current question timer
-    if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
-
-    // Move current to past
     const current = activeQuestionRef.current
     if (current) setPastQuestions(past => [...past, current])
 
-    const next = questions
-      .filter(q => q.timestampSec != null && !shownQuestionsRef.current.has(q.timestampSec!))
-      .sort((a, b) => a.timestampSec! - b.timestampSec!)[0]
-
-    if (next) {
-      shownQuestionsRef.current.add(next.timestampSec!)
-      activeQuestionRef.current = next
-      setActiveQuestion(next)
+    const idx = nextQuestionIdxRef.current
+    const qs = questionsRef.current
+    if (idx < qs.length) {
+      showQuestion(qs[idx])
+      nextQuestionIdxRef.current = idx + 1
     } else {
-      // No more questions
       activeQuestionRef.current = null
       setActiveQuestion(null)
     }
   }
 
-  function startTimer(duration: number, qs: Question[]) {
-    elapsedRef.current = 0
-    setTimeLeft(duration)
+  function updateTimerDisplay(remaining: number) {
+    if (!timerDisplayRef.current) return
+    const m = Math.floor(remaining / 60).toString().padStart(2, '0')
+    const s = (remaining % 60).toString().padStart(2, '0')
+    timerDisplayRef.current.textContent = `${m}:${s}`
+  }
 
-    const sorted = qs
-      .filter(q => q.timestampSec != null)
-      .sort((a, b) => a.timestampSec! - b.timestampSec!)
-    if (sorted.length > 0) {
-      const first = sorted[0]
-      shownQuestionsRef.current.add(first.timestampSec!)
-      showQuestion(first)
+  function startTimer(duration: number, qs: Question[] = []) {
+    elapsedRef.current = 0
+    remainingRef.current = duration
+    updateTimerDisplay(duration)
+
+    // Compute trigger seconds: explicit timestamp or auto-spread
+    const withTriggers = qs.map((q, i) => ({
+      q,
+      trigger: (q.timestampSec != null && q.timestampSec > 0)
+        ? q.timestampSec
+        : Math.round(duration * i / qs.length),
+    }))
+    withTriggers.sort((a, b) => a.trigger - b.trigger)
+
+    const sortedQs = withTriggers.map(x => x.q)
+    const triggers = withTriggers.map(x => x.trigger)
+
+    questionsRef.current = sortedQs
+    nextQuestionIdxRef.current = 0
+
+    // Show first question immediately
+    if (sortedQs.length > 0) {
+      showQuestion(sortedQs[0])
+      nextQuestionIdxRef.current = 1
     }
 
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) { stopTimer(); handleTimeUp(); return 0 }
-        return prev - 1
-      })
-
       elapsedRef.current += 1
-      const next = elapsedRef.current
-      qs.filter(q => q.timestampSec != null).forEach(q => {
-        if (q.timestampSec === next && !shownQuestionsRef.current.has(q.timestampSec!)) {
-          shownQuestionsRef.current.add(q.timestampSec!)
-          showQuestion(q)
-        }
-      })
+      remainingRef.current -= 1
+      updateTimerDisplay(remainingRef.current)
+
+      const elapsed = elapsedRef.current
+      const idx = nextQuestionIdxRef.current
+      if (idx < sortedQs.length && triggers[idx] <= elapsed) {
+        const current = activeQuestionRef.current
+        if (current) setPastQuestions(past => [...past, current])
+        showQuestion(sortedQs[idx])
+        nextQuestionIdxRef.current = idx + 1
+      }
+
+      if (remainingRef.current <= 0) {
+        stopTimer()
+        handleTimeUp()
+      }
     }, 1000)
   }
 
@@ -212,20 +216,17 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
   }
 
   async function handleRestart() {
-    // Stop current recording and stream
     stopTimer()
     if (countdownRef.current) clearInterval(countdownRef.current)
-    if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
     mediaRecorderRef.current?.stop()
     audioRecorderRef.current?.stop()
     streamRef.current?.getTracks().forEach(t => t.stop())
 
-    // Reset all recording state
     chunksRef.current = []
     audioChunksRef.current = []
     activeQuestionRef.current = null
     elapsedRef.current = 0
-    shownQuestionsRef.current = new Set()
+    nextQuestionIdxRef.current = 0
     setActiveQuestion(null)
     setPastQuestions([])
     setExtraUsed(false)
@@ -239,7 +240,7 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
         videoRef.current.muted = true
         videoRef.current.play().catch(() => {})
       }
-      beginCountdown(stream)
+      beginCountdown(stream, questionsRef.current)
     } catch {
       setError('Kamera veya mikrofon erişimi sağlanamadı.')
     }
@@ -247,7 +248,6 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
 
   function stopRecording() {
     stopTimer()
-    if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
     const current = activeQuestionRef.current
     if (current) {
       setPastQuestions(past => [...past, current])
@@ -306,14 +306,13 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
 
   function handleCancel() {
     stopTimer()
-    if (activeQTimerRef.current) clearInterval(activeQTimerRef.current)
     streamRef.current?.getTracks().forEach(t => t.stop())
     if (videoRef.current) videoRef.current.srcObject = null
     chunksRef.current = []
     audioChunksRef.current = []
     activeQuestionRef.current = null
     elapsedRef.current = 0
-    shownQuestionsRef.current = new Set()
+    nextQuestionIdxRef.current = 0
     setActiveQuestion(null)
     setPastQuestions([])
 
@@ -322,9 +321,6 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
     setModalOpen(false)
     setState('idle')
   }
-
-  const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0')
-  const seconds = (timeLeft % 60).toString().padStart(2, '0')
 
   return (
     <>
@@ -528,7 +524,7 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
                     background: 'rgba(0,0,0,0.6)', borderRadius: 99, padding: '4px 10px',
                   }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1s ease-in-out infinite', display: 'block' }} />
-                    <span style={{ color: '#fff', fontSize: 13, fontFamily: 'monospace', fontWeight: 600 }}>{minutes}:{seconds}</span>
+                    <span ref={timerDisplayRef} style={{ color: '#fff', fontSize: 13, fontFamily: 'monospace', fontWeight: 600 }}>05:00</span>
                   </div>
                 )}
 
@@ -579,18 +575,16 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
                       fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0, marginTop: 2,
                     }}>SORU</span>
                     <p style={{ color: '#fff', fontSize: 15, lineHeight: 1.55, margin: 0, fontWeight: 500, flex: 1 }}>{activeQuestion.text}</p>
-                    {questions.filter(q => q.timestampSec != null && !shownQuestionsRef.current.has(q.timestampSec!)).length > 0 && (
-                      <button
-                        onClick={showNextQuestion}
-                        style={{
-                          background: '#0033ff', color: '#fff', border: 'none',
-                          borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
-                          cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2,
-                        }}
-                      >
-                        Sonraki →
-                      </button>
-                    )}
+                    <button
+                      onClick={showNextQuestion}
+                      style={{
+                        background: '#0033ff', color: '#fff', border: 'none',
+                        borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2,
+                      }}
+                    >
+                      Sonraki →
+                    </button>
                   </div>
                 </div>
               )}

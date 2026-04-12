@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { invalidateJobData } from '@/actions/cache'
 
 interface Props {
   appId: string
@@ -98,8 +97,7 @@ export function StepUpload({ appId, jobId, userId, cvFile, cvMatchScore, videoBl
       setUploadState('done')
       setTimeout(onDone, 1500)
 
-      // Fire and forget — these run in background after success is shown
-      invalidateJobData(jobId).catch(console.error)
+      // Fire and forget — analysis starts in background after success is shown
       fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

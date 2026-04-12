@@ -39,13 +39,6 @@ export function StepIntroVideo({ videoUrl, applicationId, onContinue }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">Şirketi Tanıyın</h2>
-        <p className="text-sm text-muted-foreground">
-          Başvurmadan önce bizi biraz tanımanızı istedik.
-        </p>
-      </div>
-
       <div className="rounded-2xl overflow-hidden bg-black aspect-video">
         <video
           ref={videoRef}
@@ -62,7 +55,7 @@ export function StepIntroVideo({ videoUrl, applicationId, onContinue }: Props) {
         disabled={!canSkip}
         className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-medium hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {canSkip ? 'Devam Et' : 'Videoyu izleyin...'}
+        {canSkip ? 'Kaydı Başlat' : 'Videoyu izleyin...'}
       </button>
     </div>
   )

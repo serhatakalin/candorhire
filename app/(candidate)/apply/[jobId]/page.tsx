@@ -1,6 +1,7 @@
 import { getServerSession, createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound, redirect } from 'next/navigation'
 import { ApplyFlow } from './ApplyFlow'
+import { getPresignedDownloadUrl } from '@/lib/r2'
 
 export default async function ApplyPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params
@@ -36,12 +37,15 @@ export default async function ApplyPage({ params }: { params: Promise<{ jobId: s
   if (existing) redirect(`/jobs/${jobId}`)
 
   const introVideo = Array.isArray(job.intro_videos) ? job.intro_videos[0] : job.intro_videos
+  const introVideoUrl = introVideo?.url
+    ? await getPresignedDownloadUrl(introVideo.url)
+    : null
   const candidateName = profile?.name ?? session.user.email?.split('@')[0] ?? null
 
   return (
     <ApplyFlow
       job={{ id: job.id, title: job.title, questions: job.questions ?? [] }}
-      introVideoUrl={introVideo?.url ?? null}
+      introVideoUrl={introVideoUrl}
       userId={session.user.id}
       consentGiven={profile?.consent_given ?? false}
       candidateName={candidateName}

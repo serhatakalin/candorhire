@@ -20,7 +20,15 @@ interface Props {
 }
 
 // Info shown below each step header
-const STEP_INFO: Record<'cv' | 'video' | 'upload', { title: string; desc: string; tips?: { icon: string; text: string }[] }> = {
+const STEP_INFO: Record<'cv' | 'intro' | 'video' | 'upload', { title: string; desc: string; tips?: { icon: string; text: string }[] }> = {
+  intro: {
+    title: 'Pozisyon Tanıtımı',
+    desc: 'İK ekibi bu videoda pozisyon hakkında kısa bir tanıtım yapıyor. İzledikten sonra sıra sizde — kendi kaydınızı yapabilirsiniz.',
+    tips: [
+      { icon: '🎧', text: 'Sesi açık tutun' },
+      { icon: '▶️', text: 'Video bitince "Kaydı Başlat" butonu aktif hale gelir' },
+    ],
+  },
   cv: {
     title: 'CV\'nizi Yükleyin',
     desc: 'Başvurunuzun ilk adımı. Güncel CV\'nizi PDF olarak ekleyin.',
@@ -54,7 +62,7 @@ export function ApplyFlow({ job, introVideoUrl, userId, consentGiven, candidateN
   const [cvMatchScore, setCvMatchScore] = useState<number | null>(null)
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
-  const [step, setStep] = useState<Step>(introVideoUrl ? 'intro' : 'cv')
+  const [step, setStep] = useState<Step>('cv')
   const [done, setDone] = useState(false)
 
   // Delete orphaned R2 files if the page is closed or navigated away from.
@@ -69,9 +77,8 @@ export function ApplyFlow({ job, introVideoUrl, userId, consentGiven, candidateN
     return <ConsentModal userId={userId} onAccepted={() => setConsent(true)} />
   }
 
-  const mainStep = step === 'intro' ? 'cv' : step
-  const info = mainStep === 'cv' || mainStep === 'video' || mainStep === 'upload'
-    ? STEP_INFO[mainStep]
+  const info = (step === 'cv' || step === 'intro' || step === 'video' || step === 'upload')
+    ? STEP_INFO[step]
     : null
 
   return (
@@ -111,7 +118,7 @@ export function ApplyFlow({ job, introVideoUrl, userId, consentGiven, candidateN
         {/* Header + Stepper */}
         <div className="space-y-4">
           <h1 className="text-lg font-bold text-foreground">{job.title}</h1>
-          <StepIndicator step={step} done={done} />
+          <StepIndicator step={step} done={done} hasIntro={!!introVideoUrl} />
         </div>
 
         {/* Step info card */}
@@ -137,18 +144,18 @@ export function ApplyFlow({ job, introVideoUrl, userId, consentGiven, candidateN
           </div>
         )}
 
-        {step === 'intro' && introVideoUrl && (
-          <StepIntroVideo
-            videoUrl={introVideoUrl}
-            applicationId={applicationId}
-            onContinue={() => setStep('cv')}
-          />
-        )}
-
         {step === 'cv' && (
           <StepCV
             jobId={job.id}
-            onContinue={(file, score) => { setCvFile(file); setCvMatchScore(score); setStep('video') }}
+            onContinue={(file, score) => { setCvFile(file); setCvMatchScore(score); setStep(introVideoUrl ? 'intro' : 'video') }}
+          />
+        )}
+
+        {step === 'intro' && introVideoUrl && (
+          <StepIntroVideo
+            videoUrl={introVideoUrl}
+            applicationId={appId}
+            onContinue={() => setStep('video')}
           />
         )}
 
@@ -190,17 +197,24 @@ export function ApplyFlow({ job, introVideoUrl, userId, consentGiven, candidateN
 }
 
 function stepOrder(step: Step): number {
-  return { intro: -1, cv: 0, video: 1, upload: 2, done: 3 }[step]
+  return { cv: 0, intro: 1, video: 2, upload: 3, done: 4 }[step]
 }
 
 interface StepDef { key: Step; label: string }
 
-function StepIndicator({ step, done }: { step: Step; done: boolean }) {
-  const steps: StepDef[] = [
-    { key: 'cv', label: 'CV' },
-    { key: 'video', label: 'Video' },
-    { key: 'upload', label: 'Gönder' },
-  ]
+function StepIndicator({ step, done, hasIntro }: { step: Step; done: boolean; hasIntro: boolean }) {
+  const steps: StepDef[] = hasIntro
+    ? [
+        { key: 'cv', label: 'CV' },
+        { key: 'intro', label: 'Tanıtım' },
+        { key: 'video', label: 'Video' },
+        { key: 'upload', label: 'Gönder' },
+      ]
+    : [
+        { key: 'cv', label: 'CV' },
+        { key: 'video', label: 'Video' },
+        { key: 'upload', label: 'Gönder' },
+      ]
   const currentOrder = done ? 99 : stepOrder(step)
 
   return (
