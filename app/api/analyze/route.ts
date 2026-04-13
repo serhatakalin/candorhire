@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // Invalidate admin cache so new application appears immediately
-    revalidateTag(`job-data-${jobId}`)
+    revalidateTag(`job-data-${jobId}`, {})
 
     // Mark as analyzing immediately
     await db().from('applications').update({ status: 'analyzing' }).eq('id', applicationId)
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     const transcript: string = (result.chunks ?? [])
       .map((c: { text: string }) => c.text.trim())
-      .filter(chunk => chunk && !ARTIFACT_PATTERNS.some(p => p.test(chunk)))
+      .filter((chunk: string) => chunk && !ARTIFACT_PATTERNS.some(p => p.test(chunk)))
       .join(' ')
 
     const wordCount = transcript.trim().split(/\s+/).filter(w => w.length > 1).length

@@ -41,8 +41,8 @@ export async function PATCH(request: NextRequest) {
     .update({ status })
     .eq('id', applicationId)
 
-  if (app?.job_id) revalidateTag(`job-data-${app.job_id}`)
-  revalidateTag(`company-apps-${profile.company_id}`)
+  if (app?.job_id) revalidateTag(`job-data-${app.job_id}`, {})
+  revalidateTag(`company-apps-${profile.company_id}`, {})
 
   return NextResponse.json({ ok: true })
 }
