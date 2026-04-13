@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,12 +23,16 @@ export function QuestionBankClient({ companyId, questions: initial }: {
   const [category, setCategory] = useState('Genel')
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
 
   async function addQuestion() {
     if (!text.trim()) return
     setAdding(true)
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('question_bank')
       .insert({ company_id: companyId, text: text.trim(), category })
       .select('id, text, category, created_at')
@@ -42,7 +46,7 @@ export function QuestionBankClient({ companyId, questions: initial }: {
 
   async function deleteQuestion(id: string) {
     setDeletingId(id)
-    await supabase.from('question_bank').delete().eq('id', id)
+    await getSupabase().from('question_bank').delete().eq('id', id)
     setQuestions(prev => prev.filter(q => q.id !== id))
     setDeletingId(null)
   }

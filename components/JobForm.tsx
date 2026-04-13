@@ -39,7 +39,11 @@ interface Props {
 
 export function JobForm({ companyId, introVideos, bankQuestions = [], initial }: Props) {
   const router = useRouter()
-  const supabase = createClient()
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
   const isEdit = !!initial
 
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -121,9 +125,9 @@ export function JobForm({ companyId, introVideos, bankQuestions = [], initial }:
       let jobId = initial?.id
 
       if (isEdit) {
-        await supabase.from('jobs').update(payload).eq('id', jobId!)
+        await getSupabase().from('jobs').update(payload).eq('id', jobId!)
       } else {
-        const { data, error: insertError } = await supabase
+        const { data, error: insertError } = await getSupabase()
           .from('jobs')
           .insert(payload)
           .select('id')

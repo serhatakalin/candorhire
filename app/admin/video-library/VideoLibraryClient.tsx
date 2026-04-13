@@ -28,7 +28,11 @@ export function VideoLibraryClient({ companyId, videos: initial }: Props) {
   const [preview, setPreview] = useState<Video | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const supabase = createClient()
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
 
   async function getVideoDuration(f: File): Promise<number> {
     return new Promise(resolve => {
@@ -68,7 +72,7 @@ export function VideoLibraryClient({ companyId, videos: initial }: Props) {
 
       const duration = await getVideoDuration(file)
 
-      const { data, error: dbErr } = await supabase
+      const { data, error: dbErr } = await getSupabase()
         .from('intro_videos')
         .insert({ company_id: companyId, title: title.trim(), url: key, duration: Math.round(duration) })
         .select()
@@ -89,7 +93,7 @@ export function VideoLibraryClient({ companyId, videos: initial }: Props) {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('intro_videos').delete().eq('id', id)
+    await getSupabase().from('intro_videos').delete().eq('id', id)
     setVideos(v => v.filter(v => v.id !== id))
     await invalidateVideos(companyId)
   }
