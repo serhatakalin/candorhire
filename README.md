@@ -2,6 +2,13 @@
 
 AI-destekli işe alım platformu. Aday videolarını otomatik transkribe edip analiz eder, CV uyumluluğunu ölçer ve yöneticilere veriye dayalı karar desteği sunar.
 
+**Production:** https://candorhire.web.app
+
+| Rol | E-posta | Şifre |
+|---|---|---|
+| HR | hr@test.com | 123456 |
+| Aday | candidate@test.com | 123456 |
+
 ## Tech Stack
 
 | Katman | Teknoloji |
@@ -132,13 +139,6 @@ Aday başvurur
                 ▼
          Admin dashboard (5s polling ile otomatik yansır)
 ```
-
-## Test Kullanıcıları
-
-| Rol | E-posta | Şifre |
-|---|---|---|
-| HR | hr@test.com | 123456 |
-| Aday | candidate@test.com | 123456 |
 
 ## Notlar
 
