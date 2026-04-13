@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('Authorization')
 
   // Proxy to Go backend
-  const goBackendUrl = 'http://localhost:8080/api/jobs/extract-keywords'
+  const goBackendUrl = `${process.env.GO_BACKEND_URL ?? 'http://localhost:8080'}/api/jobs/extract-keywords`
 
   try {
     const response = await fetch(goBackendUrl, {
