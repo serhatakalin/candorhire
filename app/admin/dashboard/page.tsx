@@ -75,7 +75,7 @@ export default async function DashboardPage() {
                 className="relative bg-white rounded-xl border border-slate-100 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.06)] flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,80,0.10)]"
               >
                 {/* Main clickable area — wraps content but not the footer buttons */}
-                <Link href={`/admin/jobs/${job.id}/candidates`} className="block rounded-xl pb-[52px]" aria-label={job.title}>
+                <Link href={`/admin/jobs/${job.id}/candidates`} prefetch={false} className="block rounded-xl pb-[52px]" aria-label={job.title}>
                   {/* Card Header */}
                   <div className="p-5 pb-3 flex items-start justify-between gap-3 pr-5">
                     <h2 className="font-extrabold text-[15px] text-[#171c1f] leading-snug tracking-tight">
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
                 {/* Footer — positioned over the bottom of the card, outside the main Link */}
                 <div className="absolute bottom-0 left-0 right-0 px-5 py-3.5 border-t border-slate-50 bg-slate-50/40 rounded-b-xl flex items-center justify-between gap-3">
                   {/* Applicant count — clicking this also navigates */}
-                  <Link href={`/admin/jobs/${job.id}/candidates`} className="flex items-center gap-2">
+                  <Link href={`/admin/jobs/${job.id}/candidates`} prefetch={false} className="flex items-center gap-2">
                     <div className="flex -space-x-2">
                       {Array.from({ length: Math.min(job.appCount, 3) }).map((_, i) => (
                         <div
@@ -145,12 +145,14 @@ export default async function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/admin/jobs/${job.id}/edit`}
+                      prefetch={false}
                       className="inline-flex items-center gap-1.5 border border-slate-200 bg-white text-slate-600 text-[12px] font-semibold px-3 py-1.5 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-colors"
                     >
                       Düzenle
                     </Link>
                     <Link
                       href={`/admin/jobs/${job.id}/candidates`}
+                      prefetch={false}
                       className="inline-flex items-center gap-1.5 bg-[#0033ff] text-white text-[12px] font-semibold px-4 py-1.5 rounded-lg hover:bg-[#0029e0] transition-colors"
                     >
                       Detay

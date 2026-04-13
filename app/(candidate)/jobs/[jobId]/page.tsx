@@ -49,7 +49,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
   const company = Array.isArray(job.companies) ? job.companies[0] : job.companies
   const keywords = (job.keywords as string[]) || []
 
-  const applyHref = session ? `/apply/${jobId}` : `/login?redirectTo=/apply/${jobId}`
+  const applyHref = `/apply/${jobId}`
 
   return (
     <main className="px-4 py-10">
@@ -99,6 +99,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
         ) : (
           <Link
             href={applyHref}
+            prefetch={false}
             className="block w-full bg-primary text-primary-foreground text-center rounded-2xl py-4 text-lg font-bold shadow-lg shadow-primary/20 hover:opacity-90 hover:-translate-y-0.5 transition-all active:scale-[0.96] active:brightness-90"
           >
             Başvur
