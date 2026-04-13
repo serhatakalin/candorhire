@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { useState } from 'react'
 import { signIn, signUp } from '@/actions/auth'
 
@@ -9,6 +9,14 @@ export default function LoginPage() {
 
   const [loginState, loginAction, loginPending] = useActionState(signIn, undefined)
   const [signupState, signupAction, signupPending] = useActionState(signUp, undefined)
+
+  useEffect(() => {
+    if (loginState?.success) {
+      // Hard navigation ensures a fresh HTTP GET so the browser sends auth cookies
+      // through proxy.ts, which validates the session before the root page renders.
+      window.location.href = '/'
+    }
+  }, [loginState])
 
   const pending = loginPending || signupPending
 
