@@ -26,5 +26,8 @@ export async function GET(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  return NextResponse.redirect(new URL(redirectTo, request.url))
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+  const proto = request.headers.get('x-forwarded-proto') || 'https'
+  const baseUrl = host ? `${proto}://${host}` : request.url
+  return NextResponse.redirect(new URL(redirectTo, baseUrl))
 }
