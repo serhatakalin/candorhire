@@ -11,15 +11,21 @@ interface ConsentModalProps {
 
 export function ConsentModal({ userId, onAccepted }: ConsentModalProps) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleAccept() {
     setLoading(true)
+    setError('')
     const supabase = createClient()
-    await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({ consent_given: true, consent_at: new Date().toISOString() })
       .eq('id', userId)
     setLoading(false)
+    if (updateError) {
+      setError('Onay kaydedilemedi, lütfen tekrar deneyin.')
+      return
+    }
     onAccepted()
   }
 
@@ -46,6 +52,7 @@ export function ConsentModal({ userId, onAccepted }: ConsentModalProps) {
             </p>
           </div>
 
+          {error && <p className="text-destructive text-sm">{error}</p>}
           <div className="flex gap-2 pt-2">
             <button
               onClick={handleAccept}

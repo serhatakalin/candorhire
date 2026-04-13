@@ -161,8 +161,7 @@ export function ApplyFlow({ job, introVideoUrl, userId, consentGiven, candidateN
 
         {step === 'video' && (
           <StepVideo
-            applicationId={appId}
-            jobId={job.id}
+            questions={job.questions}
             onDone={(vBlob, aBlob) => {
               setVideoBlob(vBlob)
               setAudioBlob(aBlob)

@@ -12,15 +12,13 @@ interface Question {
 }
 
 interface Props {
-  applicationId: string
-  jobId: string
+  questions: Question[]
   onDone: (videoBlob: Blob, audioBlob: Blob) => void
 }
 
 type RecordState = 'idle' | 'countdown' | 'recording' | 'stopped'
 
-export function StepVideo({ applicationId, jobId, onDone }: Props) {
-  const [questions, setQuestions] = useState<Question[]>([])
+export function StepVideo({ questions, onDone }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioRecorderRef = useRef<MediaRecorder | null>(null)
@@ -187,17 +185,11 @@ export function StepVideo({ applicationId, jobId, onDone }: Props) {
     setError('')
     setStarting(true)
     try {
-      const [stream, questionsRes] = await Promise.all([
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true }),
-        fetch(`/api/jobs/${jobId}/questions`),
-      ])
-      const { questions: fetched } = await questionsRes.json()
-      const qs: Question[] = fetched ?? []
-      setQuestions(qs)
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
       chunksRef.current = []
       setModalOpen(true)
-      beginCountdown(stream, qs)
+      beginCountdown(stream, questions)
     } catch (err: unknown) {
       console.error('getUserMedia / recorder error:', err)
       const name = (err as { name?: string })?.name
