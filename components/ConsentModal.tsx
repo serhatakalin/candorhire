@@ -11,10 +11,10 @@ interface ConsentModalProps {
 
 export function ConsentModal({ userId, onAccepted }: ConsentModalProps) {
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   async function handleAccept() {
     setLoading(true)
+    const supabase = createClient()
     await supabase
       .from('profiles')
       .update({ consent_given: true, consent_at: new Date().toISOString() })

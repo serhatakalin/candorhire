@@ -10,6 +10,7 @@ export function createClient() {
       cookies: {
         encode: 'tokens-only',
         getAll() {
+          if (typeof document === 'undefined') return []
           const pairs = document.cookie.split('; ').filter(Boolean)
           return pairs.map(pair => {
             const idx = pair.indexOf('=')
@@ -17,6 +18,7 @@ export function createClient() {
           })
         },
         setAll(cookiesToSet) {
+          if (typeof document === 'undefined') return
           cookiesToSet.forEach(({ name, value, options }) => {
             const parts = [`${name}=${value}`]
             if (options?.path) parts.push(`path=${options.path}`)
