@@ -117,10 +117,11 @@ Nesnel değerlendir. Her boyut için 0-100 arası puan ver. keyword_matches yaln
 }
 
 export async function POST(request: NextRequest) {
-  const { applicationId, jobId, audioKey } = await request.json()
+  const { applicationId, jobId, audioKey, videoKey } = await request.json()
+  const mediaKey: string | null = audioKey || videoKey || null
 
-  if (!applicationId || !audioKey) {
-    return NextResponse.json({ error: 'Missing applicationId or audioKey' }, { status: 400 })
+  if (!applicationId || !jobId || !mediaKey) {
+    return NextResponse.json({ error: 'Missing applicationId, jobId, or media key' }, { status: 400 })
   }
 
   try {
@@ -128,10 +129,14 @@ export async function POST(request: NextRequest) {
     revalidateTag(`job-data-${jobId}`, {})
 
     // Mark as analyzing immediately
-    await db().from('applications').update({ status: 'analyzing' }).eq('id', applicationId)
+    await db().from('applications').update({
+      status: 'analyzing',
+      score: null,
+      score_breakdown: null,
+    }).eq('id', applicationId)
 
     // Generate presigned URL for Fal to fetch the audio
-    const audioUrl = await getPresignedDownloadUrl(audioKey, 3600)
+    const audioUrl = await getPresignedDownloadUrl(mediaKey, 3600)
 
     // Submit to Fal whisper
     const submitRes = await fetch(FAL_WHISPER, {

@@ -355,10 +355,11 @@ export function AllCandidatesTable({ applications: initial }: { applications: Ca
           </div>
 
           <div className="border border-t-0 border-slate-100 rounded-b-xl overflow-visible">
-            {filtered.map(app => {
-              const displayName = app.profiles?.name || app.profiles?.email || 'İsimsiz Aday'
-              const chipClass = statusChip[app.status] ?? statusChip.pending
-              const isAnalyzing = app.status === 'analyzing'
+        {filtered.map(app => {
+          const displayName = app.profiles?.name || app.profiles?.email || 'İsimsiz Aday'
+          const chipClass = statusChip[app.status] ?? statusChip.pending
+          const isAnalyzing = app.status === 'analyzing'
+          const isScored = app.status === 'scored' || app.status === 'shortlisted' || app.status === 'rejected'
 
               return (
                 <div
@@ -432,7 +433,7 @@ export function AllCandidatesTable({ applications: initial }: { applications: Ca
 
                   {/* Skor */}
                   <div className="col-span-1 flex justify-center">
-                    {app.score != null ? (
+                    {isScored && app.score != null ? (
                       <ScoreRing score={app.score} />
                     ) : (
                       <span className="text-[11px] text-slate-300">—</span>
