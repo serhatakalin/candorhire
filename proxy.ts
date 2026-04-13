@@ -1,8 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const NO_CACHE = 'private, no-cache, no-store, must-revalidate, max-age=0'
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+  supabaseResponse.headers.set('Cache-Control', NO_CACHE)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,6 +21,7 @@ export async function proxy(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
+          supabaseResponse.headers.set('Cache-Control', NO_CACHE)
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -40,6 +44,7 @@ export async function proxy(request: NextRequest) {
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('redirectTo', pathname + request.nextUrl.search)
     const redirectResponse = NextResponse.redirect(loginUrl)
+    redirectResponse.headers.set('Cache-Control', NO_CACHE)
     supabaseResponse.cookies.getAll().forEach(cookie => {
       redirectResponse.cookies.set(cookie.name, cookie.value)
     })

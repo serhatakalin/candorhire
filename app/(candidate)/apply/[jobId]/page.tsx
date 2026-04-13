@@ -38,7 +38,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ jobId: s
 
   const introVideo = Array.isArray(job.intro_videos) ? job.intro_videos[0] : job.intro_videos
   const introVideoUrl = introVideo?.url
-    ? await getPresignedDownloadUrl(introVideo.url)
+    ? await getPresignedDownloadUrl(introVideo.url).catch(() => null)
     : null
   const candidateName = profile?.name ?? session.user.email?.split('@')[0] ?? null
 
