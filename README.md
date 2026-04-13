@@ -1,57 +1,57 @@
 # CandorHire
 
-AI-destekli işe alım platformu. Aday videolarını otomatik transkribe edip analiz eder, CV uyumluluğunu ölçer ve yöneticilere veriye dayalı karar desteği sunar.
+AI-powered recruitment platform. Automatically transcribes and analyzes candidate videos, measures CV compatibility, and provides data-driven hiring decisions for administrators.
 
 **Production:** https://candorhire.web.app
 
-| Rol | E-posta | Şifre |
+| Role | Email | Password |
 |---|---|---|
 | HR | hr@test.com | 123456 |
-| Aday | candidate@test.com | 123456 |
+| Candidate | candidate@test.com | 123456 |
 
 ## Tech Stack
 
-| Katman | Teknoloji |
+| Layer | Technology |
 |---|---|
 | Frontend | Next.js 15 (App Router) · React 19 · Tailwind CSS 4 |
 | Backend | Go 1.26 (Gin) · Next.js API Routes |
-| Veritabanı | Supabase (PostgreSQL + RLS) |
+| Database | Supabase (PostgreSQL + RLS) |
 | Auth | Supabase Auth (cookie-based SSR) |
-| Depolama | Cloudflare R2 (S3-compat, presigned URL) |
+| Storage | Cloudflare R2 (S3-compat, presigned URL) |
 | STT | Fal.ai Whisper (async queue) |
-| LLM — Analiz | OpenRouter → Gemini 2.0 Flash |
-| LLM — Keyword | Anthropic Claude 3.5 Sonnet |
-| UI Tasarım | Google Stitch |
+| LLM — Analysis | OpenRouter → Gemini 2.0 Flash |
+| LLM — Keywords | Anthropic Claude 3.5 Sonnet |
+| UI Design | Google Stitch |
 
-## Servisler
+## Services
 
-Uygulama iki ayrı process olarak çalışır:
-
-| Servis | Adres | Açıklama |
+| Service | Address | Description |
 |---|---|---|
-| Next.js | `localhost:3000` | Frontend + Next.js API Routes (CV analizi, analiz pipeline, storage) |
-| Go backend | `localhost:8080` | Keyword extraction, video signed-URL, Supabase session proxy |
+| Next.js | `localhost:3000` | Frontend + all API routes |
+| Go backend | `localhost:8080` | Keyword extraction only (Claude Sonnet) |
 
-`npm run dev` her ikisini birden başlatır (`concurrently`).
+`npm run dev` starts both simultaneously (`concurrently`).
 
-## Kurulum
+The Go backend handles a single responsibility: `extract-keywords`. All other processing (CV analysis, video STT, storage, auth) runs in Next.js API routes via direct `fetch` calls to external APIs.
 
-### Gereksinimler
+## Setup
+
+### Requirements
 
 - Node.js 20+
 - Go 1.22+
 - Supabase CLI (`brew install supabase/tap/supabase`)
 
-### 1. Bağımlılıkları kur
+### 1. Install dependencies
 
 ```bash
 npm install
 cd app/api/backend && go mod download && cd ../../..
 ```
 
-### 2. Environment değişkenlerini ayarla
+### 2. Configure environment variables
 
-Proje kökünde `.env.local` oluştur:
+Create `.env.local` in the project root:
 
 ```env
 # Supabase
@@ -70,43 +70,43 @@ FAL_KEY=
 OPENROUTER_API_KEY=
 ANTHROPIC_API_KEY=
 
-# Go backend (opsiyonel, default: 8080)
+# Go backend (optional, default: 8080)
 PORT=8080
 
-# STT provider (opsiyonel, default: fal)
+# STT provider (optional, default: fal)
 STT_PROVIDER=fal
 ```
 
-### 3. Supabase migration'larını uygula
+### 3. Apply Supabase migrations
 
 ```bash
 supabase db push
 ```
 
-Ya da local geliştirme için:
+Or for local development:
 
 ```bash
 supabase start
 supabase db reset
 ```
 
-### 4. Geliştirme ortamını başlat
+### 4. Start development environment
 
 ```bash
 npm run dev
 ```
 
-## Proje Yapısı
+## Project Structure
 
 ```
 ├── app/
-│   ├── (candidate)/        # Aday portali (ilanlar, başvuru akışı)
-│   ├── admin/              # Admin paneli (dashboard, ilanlar, adaylar)
+│   ├── (candidate)/        # Candidate portal (job listings, application flow)
+│   ├── admin/              # Admin panel (dashboard, jobs, candidates)
 │   └── api/
-│       ├── analyze/        # Video analiz pipeline (Whisper + Gemini)
-│       ├── cvs/            # CV yükleme + AI uyumluluk skoru
-│       ├── videos/         # Video/audio yükleme + signed URL
-│       └── backend/        # Go servisi (Gin)
+│       ├── analyze/        # Video analysis pipeline (Whisper + Gemini)
+│       ├── cvs/            # CV upload + AI compatibility score
+│       ├── videos/         # Video/audio upload + signed URL
+│       └── backend/        # Go service (Gin)
 │           ├── handlers/
 │           └── internal/   # db, ai, session
 ├── lib/
@@ -114,15 +114,15 @@ npm run dev
 │   ├── supabase.ts         # Supabase browser client
 │   ├── supabase-server.ts  # Supabase server client (SSR)
 │   ├── data.ts             # Cached server-side data fetchers
-│   └── stt/                # STT adaptör katmanı
+│   └── stt/                # STT adapter layer
 └── supabase/
-    └── migrations/         # PostgreSQL migration dosyaları
+    └── migrations/         # PostgreSQL migration files
 ```
 
-## Analiz Pipeline
+## Analysis Pipeline
 
 ```
-Aday başvurur
+Candidate applies
   ├─ CV → R2 + Gemini CV Check → cvMatchScore
   ├─ Video + Audio → R2
   └─ Application (status: pending)
@@ -130,19 +130,43 @@ Aday başvurur
          ▼
   /api/analyze
          ├─ status: analyzing
-         ├─ Fal.ai Whisper → Transkript
-         └─ Gemini 2.0 Flash → AI özet + skor (teknik / iletişim / motivasyon)
+         ├─ Fal.ai Whisper → Transcript
+         └─ Gemini 2.0 Flash → AI summary + score (technical / communication / motivation)
                 │
                 ▼
-         DB güncellenir (status: scored)
+         DB updated (status: scored)
                 │
                 ▼
-         Admin dashboard (5s polling ile otomatik yansır)
+         Admin dashboard (auto-updates via 5s polling)
 ```
 
-## Notlar
+## API Routes
 
-- Go backend `.env.local` dosyasını proje kökünden otomatik yükler.
-- Whisper sonuçları artefakt temizleme (altyazı halüsinasyonları) aşamasından geçer; 20 kelimeden kısa transkriptler AI analizini atlar.
-- R2 presigned URL'leri 1 saatlik TTL ile üretilir.
-- `STT_PROVIDER` env değişkeniyle farklı STT servisleri takılabilir.
+### Next.js API Routes
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/analyze` | — | Run video analysis pipeline (Whisper STT + Gemini scoring) |
+| `POST` | `/api/check-cv` | candidate | Parse PDF and check CV compatibility against job keywords |
+| `GET` | `/api/videos/signed-url?key=` | session | Generate presigned download URL for a video |
+| `GET` | `/api/cvs/signed-url?key=` | session | Generate presigned download URL for a CV |
+| `POST` | `/api/storage/upload-cv` | candidate | Upload CV PDF to R2 |
+| `GET` | `/api/storage/upload-url?key=&type=` | candidate | Get presigned upload URL for video/audio |
+| `POST` | `/api/storage/upload-video?key=` | candidate | Upload video directly to R2 |
+| `GET` | `/api/jobs/[jobId]/questions` | candidate | Fetch interview questions for a job |
+| `POST` | `/api/jobs/extract-keywords` | hr/admin | Proxy → Go backend: extract keywords from job description |
+| `PATCH` | `/api/applications/status` | hr/admin | Update application status (shortlisted / rejected / scored) |
+
+### Go Backend Routes
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/health` | — | Health check |
+| `POST` | `/api/jobs/extract-keywords` | session | Extract keywords from job title + description via Claude Sonnet |
+
+## Notes
+
+- The Go backend automatically loads `.env.local` from the project root.
+- Whisper results go through artifact filtering (subtitle hallucinations); transcripts under 20 words skip AI analysis.
+- R2 presigned URLs are generated with a 1-hour TTL.
+- The `STT_PROVIDER` env variable allows switching STT providers.
