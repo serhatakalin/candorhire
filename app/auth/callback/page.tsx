@@ -17,9 +17,17 @@ function CallbackHandler() {
 
     async function handleCallback() {
       if (code) {
-        await supabase.auth.exchangeCodeForSession(code)
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          window.location.href = `/login?auth_error=${encodeURIComponent(error.message)}`
+          return
+        }
       } else if (tokenHash && type) {
-        await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
+        if (error) {
+          window.location.href = `/login?auth_error=${encodeURIComponent(error.message)}`
+          return
+        }
       }
       window.location.href = redirectTo
     }
