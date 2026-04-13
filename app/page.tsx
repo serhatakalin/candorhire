@@ -6,6 +6,7 @@ export default async function RootPage({ searchParams }: { searchParams: Promise
   if (code) redirect(`/auth/callback?code=${code}&redirectTo=/`)
 
   const session = await getServerSession()
+  console.log('[RootPage] session:', session ? `user=${session.user.id}` : 'null')
   if (!session) redirect('/login')
 
   const supabase = await createServerSupabaseClient()
