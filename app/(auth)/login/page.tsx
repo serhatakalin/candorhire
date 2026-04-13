@@ -1,22 +1,35 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
 import { useState } from 'react'
-import { signIn, signUp } from '@/actions/auth'
+import { createClient } from '@/lib/supabase'
+import { signUp } from '@/actions/auth'
+import { useActionState } from 'react'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [loginError, setLoginError] = useState<string | undefined>()
+  const [loginPending, setLoginPending] = useState(false)
 
-  const [loginState, loginAction, loginPending] = useActionState(signIn, undefined)
   const [signupState, signupAction, signupPending] = useActionState(signUp, undefined)
 
-  useEffect(() => {
-    if (loginState?.success) {
-      // Hard navigation ensures a fresh HTTP GET so the browser sends auth cookies
-      // through proxy.ts, which validates the session before the root page renders.
-      window.location.href = '/'
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setLoginError(undefined)
+    setLoginPending(true)
+    const data = new FormData(e.currentTarget)
+    const email = data.get('email') as string
+    const password = data.get('password') as string
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setLoginError(error.message)
+      setLoginPending(false)
+      return
     }
-  }, [loginState])
+    // Cookie is now written to document.cookie by the browser client's setAll.
+    // Hard navigate so the browser sends the cookie through proxy.ts.
+    window.location.href = '/'
+  }
 
   const pending = loginPending || signupPending
 
@@ -31,7 +44,11 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form action={mode === 'login' ? loginAction : signupAction} className="flex w-full flex-col gap-4">
+        <form
+          onSubmit={mode === 'login' ? handleLogin : undefined}
+          action={mode === 'signup' ? signupAction : undefined}
+          className="flex w-full flex-col gap-4"
+        >
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground">E-posta</label>
             <input
@@ -55,7 +72,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {loginState?.error && <p className="text-sm text-destructive">{loginState.error}</p>}
+          {loginError && <p className="text-sm text-destructive">{loginError}</p>}
           {signupState?.error && <p className="text-sm text-destructive">{signupState.error}</p>}
           {signupState?.success && (
             <p className="text-sm text-green-600">Hesabınız oluşturuldu. Giriş yapabilirsiniz.</p>
