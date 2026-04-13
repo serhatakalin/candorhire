@@ -1,7 +1,10 @@
 import { getServerSession, createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 
-export default async function RootPage() {
+export default async function RootPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
+  const { code } = await searchParams
+  if (code) redirect(`/auth/callback?code=${code}&redirectTo=/`)
+
   const session = await getServerSession()
   if (!session) redirect('/login')
 
