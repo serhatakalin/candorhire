@@ -7,7 +7,10 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const redirectTo = searchParams.get('redirectTo') ?? '/'
 
-  if (code) {
+  const tokenHash = searchParams.get('token_hash')
+  const type = searchParams.get('type')
+
+  if (code || tokenHash) {
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,7 +26,11 @@ export async function GET(request: NextRequest) {
         },
       }
     )
-    await supabase.auth.exchangeCodeForSession(code)
+    if (code) {
+      await supabase.auth.exchangeCodeForSession(code)
+    } else if (tokenHash && type) {
+      await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
+    }
   }
 
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
