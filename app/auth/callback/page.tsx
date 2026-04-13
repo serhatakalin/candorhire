@@ -1,11 +1,10 @@
 'use client'
 
 import { Suspense, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 function CallbackHandler() {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -22,7 +21,7 @@ function CallbackHandler() {
       } else if (tokenHash && type) {
         await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
       }
-      router.push(redirectTo)
+      window.location.href = redirectTo
     }
 
     handleCallback()
