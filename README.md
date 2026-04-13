@@ -133,6 +133,13 @@ Aday başvurur
          Admin dashboard (5s polling ile otomatik yansır)
 ```
 
+## Test Kullanıcıları
+
+| Rol | E-posta | Şifre |
+|---|---|---|
+| HR | hr@test.com | 123456 |
+| Aday | candidate@test.com | 123456 |
+
 ## Notlar
 
 - Go backend `.env.local` dosyasını proje kökünden otomatik yükler.
