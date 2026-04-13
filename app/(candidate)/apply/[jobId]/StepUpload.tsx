@@ -28,7 +28,11 @@ export function StepUpload({ appId, jobId, userId, cvFile, cvMatchScore, videoBl
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const started = useRef(false)
-  const supabase = createClient()
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
 
   useEffect(() => {
     if (started.current) return
@@ -76,7 +80,7 @@ export function StepUpload({ appId, jobId, userId, cvFile, cvMatchScore, videoBl
       setUploadState('processing')
 
       // 2. All uploads successful — now create the DB record.
-      const { error: dbError } = await supabase
+      const { error: dbError } = await getSupabase()
         .from('applications')
         .insert({
           id: appId,

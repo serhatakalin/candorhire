@@ -13,7 +13,11 @@ export function StepIntroVideo({ videoUrl, applicationId, onContinue }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [canSkip, setCanSkip] = useState(false)
   const [ended, setEnded] = useState(false)
-  const supabase = createClient()
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
 
   // Enable skip once the video finishes playing for the first time.
   useEffect(() => {
@@ -29,7 +33,7 @@ export function StepIntroVideo({ videoUrl, applicationId, onContinue }: Props) {
 
   async function handleContinue() {
     if (applicationId) {
-      await supabase
+      await getSupabase()
         .from('applications')
         .update({ intro_watched: true })
         .eq('id', applicationId)
