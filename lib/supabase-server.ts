@@ -9,7 +9,9 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: { name: '__session' },
+      cookieEncoding: 'raw',
       cookies: {
+        encode: 'tokens-only',
         getAll() {
           return cookieStore.getAll()
         },
@@ -31,7 +33,9 @@ export async function createServiceSupabaseClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookieOptions: { name: '__session' },
+      cookieEncoding: 'raw',
       cookies: {
+        encode: 'tokens-only',
         getAll() {
           return cookieStore.getAll()
         },

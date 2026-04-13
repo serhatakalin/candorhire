@@ -9,7 +9,9 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: { name: '__session' },
+      cookieEncoding: 'raw',
       cookies: {
+        encode: 'tokens-only',
         getAll() {
           return request.cookies.getAll()
         },
