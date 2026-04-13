@@ -6,7 +6,7 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: { name: '__session' },
-      cookieEncoding: 'raw',
+      cookieEncoding: 'base64url',
       cookies: {
         encode: 'tokens-only',
         getAll() {
