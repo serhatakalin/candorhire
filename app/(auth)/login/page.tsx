@@ -28,7 +28,11 @@ export default function LoginPage() {
     }
     // Cookie is now written to document.cookie by the browser client's setAll.
     // Hard navigate so the browser sends the cookie through proxy.ts.
-    window.location.href = '/'
+    // Honor redirectTo from the URL (e.g. /login?redirectTo=/apply/...) so candidates
+    // land on the right page after login instead of always being sent to /.
+    const params = new URLSearchParams(window.location.search)
+    const redirectTo = params.get('redirectTo') ?? '/'
+    window.location.href = redirectTo
   }
 
   const pending = loginPending || signupPending
