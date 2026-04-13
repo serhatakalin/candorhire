@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const NO_CACHE = 'private, no-cache, no-store, must-revalidate, max-age=0'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
   supabaseResponse.headers.set('Cache-Control', NO_CACHE)
 
