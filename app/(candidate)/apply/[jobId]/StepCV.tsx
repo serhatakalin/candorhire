@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { createClient } from '@/lib/supabase'
 
 interface Props {
   jobId: string
@@ -9,6 +10,11 @@ interface Props {
 
 export function StepCV({ jobId, onContinue }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(false)
@@ -30,11 +36,18 @@ export function StepCV({ jobId, onContinue }: Props) {
     setWarning(null)
 
     try {
+      const { data: { session } } = await getSupabase().auth.getSession()
+      const authHeader = session?.access_token ? `Bearer ${session.access_token}` : ''
+
       const formData = new FormData()
       formData.append('file', file)
       formData.append('jobId', jobId)
 
-      const res = await fetch('/api/check-cv', { method: 'POST', body: formData })
+      const res = await fetch('/api/check-cv', {
+        method: 'POST',
+        headers: authHeader ? { 'Authorization': authHeader } : {},
+        body: formData,
+      })
       const data = await res.json()
 
       if (!data.compatible && data.missingSkills?.length > 0) {

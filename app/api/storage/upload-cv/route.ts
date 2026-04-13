@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { r2, r2Key } from '@/lib/r2'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getRequestUser } from '@/lib/supabase-server'
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME!
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getRequestUser(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const formData = await request.formData()

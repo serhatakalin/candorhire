@@ -97,6 +97,7 @@ export default async function JobsPage() {
               <Link
                 key={job.id}
                 href={`/jobs/${job.id}`}
+                prefetch={false}
                 className="block bg-white/80 backdrop-blur-sm border border-border rounded-2xl p-6 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all group"
               >
                 <div className="flex items-start gap-5">

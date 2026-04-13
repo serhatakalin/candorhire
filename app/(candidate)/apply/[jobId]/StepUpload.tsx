@@ -46,6 +46,12 @@ export function StepUpload({ appId, jobId, userId, cvFile, cvMatchScore, videoBl
       const videoKey = `applications/${appId}/video.webm`
       const audioKey = `applications/${appId}/audio.webm`
 
+      // Get access token from the browser client to pass as Authorization header.
+      // Firebase CDN strips chunked session cookies (__session.0, __session.1, …)
+      // so server-side cookie auth fails for API routes — use Bearer token instead.
+      const { data: { session } } = await getSupabase().auth.getSession()
+      const authHeader = session?.access_token ? `Bearer ${session.access_token}` : ''
+
       // 1. Upload video + audio + CV in parallel.
       await Promise.all([
         new Promise<void>((resolve, reject) => {
@@ -57,12 +63,13 @@ export function StepUpload({ appId, jobId, userId, cvFile, cvMatchScore, videoBl
           xhr.onerror = () => reject(new Error('Video upload failed. Check your internet connection.'))
           xhr.open('POST', `/api/storage/upload-video?key=${encodeURIComponent(videoKey)}`)
           xhr.setRequestHeader('Content-Type', 'video/webm')
+          if (authHeader) xhr.setRequestHeader('Authorization', authHeader)
           xhr.send(videoBlob)
         }),
         audioBlob.size > 0
           ? fetch(`/api/storage/upload-video?key=${encodeURIComponent(audioKey)}`, {
               method: 'POST',
-              headers: { 'Content-Type': 'audio/webm' },
+              headers: { 'Content-Type': 'audio/webm', ...(authHeader ? { 'Authorization': authHeader } : {}) },
               body: audioBlob,
             }).then(r => { if (!r.ok) throw new Error(`Audio upload failed (${r.status})`) })
           : Promise.resolve(),
@@ -71,8 +78,11 @@ export function StepUpload({ appId, jobId, userId, cvFile, cvMatchScore, videoBl
               const fd = new FormData()
               fd.append('file', cvFile)
               fd.append('appId', appId)
-              return fetch('/api/storage/upload-cv', { method: 'POST', body: fd })
-                .then(r => { if (!r.ok) throw new Error(`CV upload failed (${r.status})`) })
+              return fetch('/api/storage/upload-cv', {
+                method: 'POST',
+                headers: authHeader ? { 'Authorization': authHeader } : {},
+                body: fd,
+              }).then(r => { if (!r.ok) throw new Error(`CV upload failed (${r.status})`) })
             })()
           : Promise.resolve(),
       ])

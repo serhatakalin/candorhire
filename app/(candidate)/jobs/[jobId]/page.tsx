@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 
+export const dynamic = 'force-dynamic'
+
 const dotColors = [
   '#a855f7', // purple
   '#f59e0b', // amber
@@ -97,6 +99,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
         ) : (
           <Link
             href={applyHref}
+            prefetch={false}
             className="block w-full bg-primary text-primary-foreground text-center rounded-2xl py-4 text-lg font-bold shadow-lg shadow-primary/20 hover:opacity-90 hover:-translate-y-0.5 transition-all active:scale-[0.96] active:brightness-90"
           >
             Başvur
